@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Life Timer</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #7e22ce, #ec4899);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin: 20px 0;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    input {
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      margin-bottom: 20px;
+      font-size: 16px;
+    }
+    .card {
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      text-align: center;
+      margin: 10px 0;
+      max-width: 500px;
+      width: 100%;
+    }
+    .error {
+      color: #ffdddd;
+      margin-top: 10px;
+    }
+    a {
+      color: #a5f3fc;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h1>⏳ Life Timer</h1>
+  <input type="date" id="birthInput" />
+
+  <div id="ageCard" class="card" style="display:none;"></div>
+  <div id="yearCard" class="card" style="display:none;"></div>
+  <p id="error" class="error"></p>
+
+  <script>
+    const input = document.getElementById("birthInput");
+    const ageCard = document.getElementById("ageCard");
+    const yearCard = document.getElementById("yearCard");
+    const errorEl = document.getElementById("error");
+    let timer = null;
+
+    function calculateDiff(dateString) {
+      const birth = new Date(dateString + "T00:00:00");
+      const now = new Date();
+
+      let years = now.getFullYear() - birth.getFullYear();
+      const birthdayThisYear = new Date(now.getFullYear(), birth.getMonth(), birth.getDate());
+      if (now < birthdayThisYear) years--;
+
+      const ms = now - birth;
+      const days = Math.floor(ms / (1000*60*60*24));
+      const hours = Math.floor(ms / (1000*60*60));
+      const minutes = Math.floor(ms / (1000*60));
+      const seconds = Math.floor(ms / 1000);
+
+      ageCard.style.display = "block";
+      ageCard.innerHTML = `
+        <p style="font-size:20px;">Тебе ${years} лет</p>
+        <p>${days} дней</p>
+        <p>${hours} часов</p>
+        <p>${minutes} минут</p>
+        <p>${seconds} секунд</p>
+      `;
+    }
+
+    async function fetchYearData(year) {
+      try {
+        errorEl.textContent = "";
+        yearCard.style.display = "block";
+        yearCard.innerHTML = "Загрузка информации...";
+
+        // Через прокси (чтобы работало без сервера)
+        const url = `https://api.allorigins.win/get?url=${encodeURIComponent(
+          "https://en.wikipedia.org/api/rest_v1/page/summary/" + year
+        )}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Ошибка загрузки");
+
+        const wrapped = await res.json();
+        const data = JSON.parse(wrapped.contents);
+
+        yearCard.innerHTML = `
+          <h2>Что было в ${year} году:</h2>
+          <p>${data.extract || "(нет описания)"}</p>
+          <a href="${data.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${year}`}" target="_blank">
+            Читать подробнее →
+          </a>
+        `;
+      } catch (err) {
+        errorEl.textContent = "⚠️ Не удалось загрузить данные из Wikipedia";
+        yearCard.style.display = "none";
+      }
+    }
+
+    input.addEventListener("change", () => {
+      const date = input.value;
+      if (!date) return;
+
+      if (timer) clearInterval(timer);
+      calculateDiff(date);
+      timer = setInterval(() => calculateDiff(date), 1000);
+
+      const birthYear = new Date(date + "T00:00:00").getFullYear();
+      fetchYearData(birthYear);
+    });
+  </script>
+</body>
+</html>
