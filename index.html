@@ -2,131 +2,129 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Life Timer</title>
+  <title>Сколько прошло времени с твоего рождения</title>
   <style>
     body {
-      margin: 0;
       font-family: Arial, sans-serif;
-      background: linear-gradient(to right, #7e22ce, #ec4899);
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
+      background: linear-gradient(135deg, #89f7fe, #66a6ff);
+      color: #222;
+      text-align: center;
       padding: 20px;
     }
-    h1 {
-      font-size: 2.5rem;
-      margin: 20px 0;
-      text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
-    input {
+    select, input, button {
       padding: 10px;
+      margin: 10px;
       border-radius: 10px;
-      border: none;
-      margin-bottom: 20px;
+      border: 1px solid #ccc;
       font-size: 16px;
     }
-    .card {
-      background: rgba(255,255,255,0.2);
-      backdrop-filter: blur(10px);
-      padding: 20px;
-      border-radius: 15px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-      text-align: center;
-      margin: 10px 0;
-      max-width: 500px;
-      width: 100%;
+    button {
+      background: #4CAF50;
+      color: white;
+      cursor: pointer;
     }
-    .error {
-      color: #ffdddd;
-      margin-top: 10px;
+    button:hover {
+      background: #45a049;
     }
-    a {
-      color: #a5f3fc;
-      text-decoration: underline;
+    #result, #wikiData {
+      margin-top: 20px;
+      text-align: left;
     }
   </style>
 </head>
 <body>
-  <h1>⏳ Life Timer</h1>
-  <input type="date" id="birthInput" />
+  <div class="container">
+    <h1 id="title">Добро пожаловать!</h1>
+    <p id="description">
+      Этот сайт позволяет ввести дату рождения и узнать:  
+      <br>- Сколько дней, часов, минут и секунд прошло с момента твоего рождения  
+      <br>- Какие знаменитости родились в тот же год  
+      <br>- Какие фильмы и песни вышли в твоём году рождения
+    </p>
 
-  <div id="ageCard" class="card" style="display:none;"></div>
-  <div id="yearCard" class="card" style="display:none;"></div>
-  <p id="error" class="error"></p>
+    <!-- Переключатель языка -->
+    <label for="lang">🌐 Выберите язык:</label>
+    <select id="lang" onchange="changeLanguage()">
+      <option value="ru">Русский</option>
+      <option value="en">English</option>
+    </select>
+
+    <br><br>
+    <input type="date" id="birthdate">
+    <button onclick="calculate()">Рассчитать</button>
+
+    <div id="result"></div>
+    <div id="wikiData"></div>
+  </div>
 
   <script>
-    const input = document.getElementById("birthInput");
-    const ageCard = document.getElementById("ageCard");
-    const yearCard = document.getElementById("yearCard");
-    const errorEl = document.getElementById("error");
-    let timer = null;
+    const translations = {
+      ru: {
+        title: "Добро пожаловать!",
+        description: "Этот сайт позволяет ввести дату рождения и узнать:\n- Сколько дней, часов, минут и секунд прошло с момента твоего рождения\n- Какие знаменитости родились в тот же год\n- Какие фильмы и песни вышли в твоём году рождения",
+        button: "Рассчитать"
+      },
+      en: {
+        title: "Welcome!",
+        description: "This website lets you enter your birthdate and find out:\n- How many days, hours, minutes and seconds have passed since your birth\n- Which famous people were born in the same year\n- Which movies and songs were released in your birth year",
+        button: "Calculate"
+      }
+    };
 
-    function calculateDiff(dateString) {
-      const birth = new Date(dateString + "T00:00:00");
-      const now = new Date();
-
-      let years = now.getFullYear() - birth.getFullYear();
-      const birthdayThisYear = new Date(now.getFullYear(), birth.getMonth(), birth.getDate());
-      if (now < birthdayThisYear) years--;
-
-      const ms = now - birth;
-      const days = Math.floor(ms / (1000*60*60*24));
-      const hours = Math.floor(ms / (1000*60*60));
-      const minutes = Math.floor(ms / (1000*60));
-      const seconds = Math.floor(ms / 1000);
-
-      ageCard.style.display = "block";
-      ageCard.innerHTML = `
-        <p style="font-size:20px;">Тебе ${years} лет</p>
-        <p>${days} дней</p>
-        <p>${hours} часов</p>
-        <p>${minutes} минут</p>
-        <p>${seconds} секунд</p>
-      `;
+    function changeLanguage() {
+      const lang = document.getElementById("lang").value;
+      document.getElementById("title").innerText = translations[lang].title;
+      document.getElementById("description").innerText = translations[lang].description;
+      document.querySelector("button").innerText = translations[lang].button;
     }
 
-    async function fetchYearData(year) {
+    function calculate() {
+      const birthdate = new Date(document.getElementById("birthdate").value);
+      if (!birthdate) return;
+
+      const now = new Date();
+      const diffMs = now - birthdate;
+
+      const seconds = Math.floor(diffMs / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
+      const years = now.getFullYear() - birthdate.getFullYear();
+
+      document.getElementById("result").innerHTML = `
+        <h2>Результаты:</h2>
+        <p>Лет: ${years}</p>
+        <p>Дней: ${days}</p>
+        <p>Часов: ${hours}</p>
+        <p>Минут: ${minutes}</p>
+        <p>Секунд: ${seconds}</p>
+      `;
+
+      loadWikiData(birthdate.getFullYear());
+    }
+
+    async function loadWikiData(year) {
       try {
-        errorEl.textContent = "";
-        yearCard.style.display = "block";
-        yearCard.innerHTML = "Загрузка информации...";
+        const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${year}`);
+        const data = await res.json();
 
-        // Через прокси (чтобы работало без сервера)
-        const url = `https://api.allorigins.win/get?url=${encodeURIComponent(
-          "https://en.wikipedia.org/api/rest_v1/page/summary/" + year
-        )}`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Ошибка загрузки");
-
-        const wrapped = await res.json();
-        const data = JSON.parse(wrapped.contents);
-
-        yearCard.innerHTML = `
-          <h2>Что было в ${year} году:</h2>
-          <p>${data.extract || "(нет описания)"}</p>
-          <a href="${data.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${year}`}" target="_blank">
-            Читать подробнее →
-          </a>
+        document.getElementById("wikiData").innerHTML = `
+          <h2>Wikipedia (${year}):</h2>
+          <p>${data.extract || "Информация не найдена."}</p>
+          <a href="https://en.wikipedia.org/wiki/${year}" target="_blank">Читать подробнее</a>
         `;
-      } catch (err) {
-        errorEl.textContent = "⚠️ Не удалось загрузить данные из Wikipedia";
-        yearCard.style.display = "none";
+      } catch (e) {
+        document.getElementById("wikiData").innerText = "⚠️ Ошибка загрузки данных с Wikipedia.";
       }
     }
-
-    input.addEventListener("change", () => {
-      const date = input.value;
-      if (!date) return;
-
-      if (timer) clearInterval(timer);
-      calculateDiff(date);
-      timer = setInterval(() => calculateDiff(date), 1000);
-
-      const birthYear = new Date(date + "T00:00:00").getFullYear();
-      fetchYearData(birthYear);
-    });
   </script>
 </body>
 </html>
