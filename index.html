@@ -12,7 +12,7 @@
       padding: 20px;
     }
     .container {
-      max-width: 600px;
+      max-width: 700px;
       margin: auto;
       background: #fff;
       border-radius: 20px;
@@ -46,6 +46,7 @@
     <p id="description">
       Этот сайт позволяет ввести дату рождения и узнать:  
       <br>- Сколько дней, часов, минут и секунд прошло с момента твоего рождения  
+      <br>- Сколько тебе лет (с учётом точной даты)  
       <br>- Какие знаменитости родились в тот же год  
       <br>- Какие фильмы и песни вышли в твоём году рождения
     </p>
@@ -59,7 +60,9 @@
 
     <br><br>
     <input type="date" id="birthdate">
-    <button onclick="calculate()">Рассчитать</button>
+    <button onclick="calculate()">
+      Рассчитать
+    </button>
 
     <div id="result"></div>
     <div id="wikiData"></div>
@@ -69,13 +72,27 @@
     const translations = {
       ru: {
         title: "Добро пожаловать!",
-        description: "Этот сайт позволяет ввести дату рождения и узнать:\n- Сколько дней, часов, минут и секунд прошло с момента твоего рождения\n- Какие знаменитости родились в тот же год\n- Какие фильмы и песни вышли в твоём году рождения",
-        button: "Рассчитать"
+        description: "Этот сайт позволяет ввести дату рождения и узнать:\n- Сколько дней, часов, минут и секунд прошло с момента твоего рождения\n- Сколько тебе лет (с учётом точной даты)\n- Какие знаменитости родились в тот же год\n- Какие фильмы и песни вышли в твоём году рождения",
+        button: "Рассчитать",
+        results: "Результаты:",
+        years: "Лет",
+        days: "Дней",
+        hours: "Часов",
+        minutes: "Минут",
+        seconds: "Секунд",
+        wiki: "Wikipedia"
       },
       en: {
         title: "Welcome!",
-        description: "This website lets you enter your birthdate and find out:\n- How many days, hours, minutes and seconds have passed since your birth\n- Which famous people were born in the same year\n- Which movies and songs were released in your birth year",
-        button: "Calculate"
+        description: "This website lets you enter your birthdate and find out:\n- How many days, hours, minutes and seconds have passed since your birth\n- Your exact age (with month/day)\n- Which famous people were born in the same year\n- Which movies and songs were released in your birth year",
+        button: "Calculate",
+        results: "Results:",
+        years: "Years",
+        days: "Days",
+        hours: "Hours",
+        minutes: "Minutes",
+        seconds: "Seconds",
+        wiki: "Wikipedia"
       }
     };
 
@@ -88,38 +105,49 @@
 
     function calculate() {
       const birthdate = new Date(document.getElementById("birthdate").value);
-      if (!birthdate) return;
+      if (!birthdate || isNaN(birthdate)) return;
 
       const now = new Date();
       const diffMs = now - birthdate;
+
+      // Правильный возраст (с месяцем и днём)
+      let years = now.getFullYear() - birthdate.getFullYear();
+      const m = now.getMonth() - birthdate.getMonth();
+      if (m < 0 || (m === 0 && now.getDate() < birthdate.getDate())) {
+        years--;
+      }
 
       const seconds = Math.floor(diffMs / 1000);
       const minutes = Math.floor(seconds / 60);
       const hours = Math.floor(minutes / 60);
       const days = Math.floor(hours / 24);
-      const years = now.getFullYear() - birthdate.getFullYear();
+
+      const lang = document.getElementById("lang").value;
+      const t = translations[lang];
 
       document.getElementById("result").innerHTML = `
-        <h2>Результаты:</h2>
-        <p>Лет: ${years}</p>
-        <p>Дней: ${days}</p>
-        <p>Часов: ${hours}</p>
-        <p>Минут: ${minutes}</p>
-        <p>Секунд: ${seconds}</p>
+        <h2>${t.results}</h2>
+        <p>${t.years}: ${years}</p>
+        <p>${t.days}: ${days}</p>
+        <p>${t.hours}: ${hours}</p>
+        <p>${t.minutes}: ${minutes}</p>
+        <p>${t.seconds}: ${seconds}</p>
       `;
 
-      loadWikiData(birthdate.getFullYear());
+      loadWikiData(birthdate.getFullYear(), lang);
     }
 
-    async function loadWikiData(year) {
+    async function loadWikiData(year, lang) {
       try {
-        const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${year}`);
+        const wikiLang = (lang === "ru") ? "ru" : "en";
+        const res = await fetch(`https://${wikiLang}.wikipedia.org/api/rest_v1/page/summary/${year}`);
         const data = await res.json();
 
+        const t = translations[lang];
         document.getElementById("wikiData").innerHTML = `
-          <h2>Wikipedia (${year}):</h2>
+          <h2>${t.wiki} (${year}):</h2>
           <p>${data.extract || "Информация не найдена."}</p>
-          <a href="https://en.wikipedia.org/wiki/${year}" target="_blank">Читать подробнее</a>
+          <a href="https://${wikiLang}.wikipedia.org/wiki/${year}" target="_blank">🔗 ${t.wiki}</a>
         `;
       } catch (e) {
         document.getElementById("wikiData").innerText = "⚠️ Ошибка загрузки данных с Wikipedia.";
